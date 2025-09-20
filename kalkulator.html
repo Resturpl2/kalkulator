@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kalkulator Galaxy Visualizer</title>
+  <style>
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(circle at top, #1a103d, #0a0320, #000);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      flex-direction: column;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 200%; height: 200%;
+      background: url("https://www.transparenttextures.com/patterns/stardust.png");
+      animation: stars 60s linear infinite;
+    }
+    @keyframes stars {
+      from { transform: translate(0,0); }
+      to { transform: translate(-500px,-500px); }
+    }
+    .calculator {
+      position: relative;
+      z-index: 1;
+      background: rgba(20, 20, 40, 0.9);
+      padding: 20px;
+      border-radius: 20px;
+      width: 320px;
+      box-shadow: 0 0 30px rgba(138, 43, 226, 0.8);
+      transition: box-shadow 0.2s ease-in-out;
+    }
+    #display {
+      width: 100%;
+      height: 70px;
+      font-size: 28px;
+      margin-bottom: 15px;
+      text-align: right;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      background: black;
+      color: #00ffcc;
+      box-shadow: inset 0 0 10px #00ffcc;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    button {
+      height: 70px;
+      font-size: 22px;
+      border: none;
+      border-radius: 15px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+    button:hover {
+      background: rgba(255,255,255,0.2);
+      box-shadow: 0 0 20px #fff;
+    }
+    .operator {
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      box-shadow: 0 0 15px #6a11cb;
+    }
+    .equal {
+      grid-column: span 2;
+      background: linear-gradient(135deg, #00f260, #0575e6);
+      box-shadow: 0 0 15px #00f260;
+      color: black;
+      font-weight: bold;
+    }
+    .clear {
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      box-shadow: 0 0 15px #ff416c;
+    }
+    .delete {
+      background: linear-gradient(135deg, #f7971e, #ffd200);
+      box-shadow: 0 0 15px #ffd200;
+      color: black;
+      font-weight: bold;
+    }
+    .music-control {
+      margin-top: 15px;
+      z-index: 2;
+      position: relative;
+    }
+    .music-control button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 10px #2a5298;
+    }
+    .music-control button:hover {
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator" id="calcBox">
+    <input type="text" id="display" disabled>
+    <div class="buttons">
+      <button class="clear" onclick="clearDisplay()">C</button>
+      <button class="delete" onclick="deleteLast()">⌫</button>
+      <button onclick="appendValue('.')">.</button>
+      <button class="operator" onclick="appendValue('/')">÷</button>
+
+      <button onclick="appendValue('7')">7</button>
+      <button onclick="appendValue('8')">8</button>
+      <button onclick="appendValue('9')">9</button>
+      <button class="operator" onclick="appendValue('*')">×</button>
+
+      <button onclick="appendValue('4')">4</button>
+      <button onclick="appendValue('5')">5</button>
+      <button onclick="appendValue('6')">6</button>
+      <button class="operator" onclick="appendValue('-')">−</button>
+
+      <button onclick="appendValue('1')">1</button>
+      <button onclick="appendValue('2')">2</button>
+      <button onclick="appendValue('3')">3</button>
+      <button class="operator" onclick="appendValue('+')">+</button>
+
+      <button onclick="appendValue('0')">0</button>
+      <button class="equal" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <!-- Kontrol musik -->
+  <div class="music-control">
+    <button onclick="toggleMusic()">🎵 Play/Pause Musik Galaxy</button>
+  </div>
+
+  <!-- Suara klik & hasil -->
+  <audio id="clickSound" src="https://assets.mixkit.co/sfx/download/mixkit-interface-click-1126.wav"></audio>
+  <audio id="equalSound" src="https://assets.mixkit.co/sfx/download/mixkit-space-coin-1993.wav"></audio>
+
+  <!-- Musik latar galaxy -->
+  <audio id="bgMusic" loop crossorigin="anonymous">
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d5b7b5c09d.mp3?filename=ambient-space-112191.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    let display = document.getElementById("display");
+    let clickSound = document.getElementById("clickSound");
+    let equalSound = document.getElementById("equalSound");
+    let bgMusic = document.getElementById("bgMusic");
+    let calcBox = document.getElementById("calcBox");
+    let audioCtx, analyser, source, dataArray;
+
+    function appendValue(value) {
+      display.value += value;
+      playClick();
+    }
+
+    function clearDisplay() {
+      display.value = "";
+      playClick();
+    }
+
+    function deleteLast() {
+      display.value = display.value.slice(0, -1);
+      playClick();
+    }
+
+    function calculate() {
+      try {
+        display.value = eval(display.value);
+        equalSound.play();
+      } catch {
+        display.value = "Error";
+      }
+    }
+
+    function playClick() {
+      clickSound.currentTime = 0;
+      clickSound.play();
+    }
+
+    function toggleMusic() {
+      if (bgMusic.paused) {
+        bgMusic.play();
+        initVisualizer();
+      } else {
+        bgMusic.pause();
+      }
+    }
+
+    function initVisualizer() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        source = audioCtx.createMediaElementSource(bgMusic);
+        analyser = audioCtx.createAnalyser();
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        analyser.fftSize = 256;
+        let bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        animateVisualizer();
+      }
+    }
+
+    function animateVisualizer() {
+      requestAnimationFrame(animateVisualizer);
+      analyser.getByteFrequencyData(dataArray);
+      let avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+
+      // Efek glow berdasarkan beat musik
+      let glow = Math.min(100, avg / 2);
+      calcBox.style.boxShadow = `
+        0 0 ${10 + glow}px rgba(138,43,226,0.9),
+        0 0 ${30 + glow}px rgba(75,0,130,0.7),
+        0 0 ${50 + glow}px rgba(0,255,204,0.6)
+      `;
+    }
+  </script>
+</body>
+</html>
+
